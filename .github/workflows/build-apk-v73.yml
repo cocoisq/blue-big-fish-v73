@@ -1,0 +1,55 @@
+
+name: Build Blue Big Fish V73 APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'V73-part-00'
+      - 'V73-part-01'
+      - 'V73-part-02'
+      - 'V73-part-03'
+      - 'V73-part-04'
+      - '.github/workflows/build-apk-v73.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Reassemble project ZIP
+        run: |
+          cat V73-part-00 V73-part-01 V73-part-02 V73-part-03 V73-part-04 > V73-Android-Project.zip
+          unzip -tq V73-Android-Project.zip
+          unzip -q V73-Android-Project.zip -d source
+          test -f source/V73-work/settings.gradle.kts
+
+      - name: Build debug APK
+        working-directory: source/V73-work
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: blue-big-fish-v73-apk
+          path: source/V73-work/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
